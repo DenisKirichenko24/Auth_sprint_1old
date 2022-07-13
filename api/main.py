@@ -1,13 +1,15 @@
-from flask import render_template, request, flash
-from api.core.config import Config
-# from flask_auth import models
+from flask import render_template, request, flash, make_response, jsonify
 
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
-from core.config import db, app, manager
+from core.config import db, app
+from api.models.utils import token_required
+from api.models.users import User
+import jwt
+from datetime import datetime, timedelta
 
 
 app = app
-manager = manager
 migrate = Migrate(app, db)
 db = db
 db.create_all()
@@ -17,45 +19,88 @@ def main(flask_app):
     flask_app.run(debug=True, host='0.0.0.0', port=5001)
 
 
-@app.route('/')
-def index():
-    return render_template('login.html')
+# @app.route('/')
+# @token_required
+# def index():
+#     return render_template('login.html')
+
+@app.route('/login', methods=['POST'])
+def login():
+    auth = request.form
+    print(auth.get('password'))
+
+    if not auth or not auth.get('email') or not auth.get('password'):
+        return make_response(
+            'Could not login',
+            401,
+            {'WWW-Authenticate': 'Basic realm ="Login required !!"'}
+        )
+
+    user = User.query \
+        .filter_by(email=auth.get('email')) \
+        .first()
+
+    if not user:
+        return make_response(
+            'User not found',
+            401,
+            {'WWW-Authenticate': 'Basic realm ="User does not exist !!"'}
+        )
+
+    if check_password_hash(user.password, auth.get('password')):
+        try:
+            data = datetime.now() + timedelta(minutes=30)
+            token = jwt.encode({
+                'id': user.id,
+                'exp': data
+            }, app.config['SECRET_KEY'])
+            return make_response(jsonify({'token': token}), 201)
+        except Exception as e:
+            print(e)
+    return make_response(
+        'Could not verify password',
+        403,
+        {'WWW-Authenticate': 'Basic realm ="Wrong Password !!"'}
+    )
 
 
-# @app.route('/registration', methods=['GET', 'POST'])
-# def registration():
-#     login = request.form.get('login')
-#     password = request.form.get('password')
-#     password_confirm = request.form.get('password_confirm')
-#     email = request.form.get('email')
-#
-#     if request.method == 'POST':
-#         if not (login or password or password_confirm or email):
-#             flash('Please fill all fields')
-#
-#     if request.method == 'GET':
-#         return render_template('registration.html')
-#
-#
-# @app.route('/login', methods=['GET', 'POST'])
-# def login():
-#     login = request.form.get('login')
-#     password = request.form.get('password')
-#
-#     if login and password:
-#         user = User.query.filter_by(login=login).first()
-#
-#         # if check_password_hash(user.password, password):
-#         #     login_user(user)
-#         #     next = request.args.get('next')
-#         #     redirect(next)  # type: ignore
-#     else:
-#         return render_template('login.html')
-#
-#
-# @app.route('/logout', methods=['GET', 'POST'])
-# def logout():
-#     pass
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.form
+    username, email = data.get('username'), data.get('email')
+    password = data.get('password')
+    user = User.query \
+        .filter_by(email=email) \
+        .first()
+    if not user:
+
+        user = User(
+            username=username,
+            email=email,
+            password=generate_password_hash(password)
+        )
+
+        db.session.add(user)
+        db.session.commit()
+
+        return make_response('Successfully registered.', 201)
+    else:
+        return make_response('User already exists. Please Log in.', 202)
+
+
+@app.route('/user', methods=['GET'])
+@token_required
+def get_all_users(current_user):
+    users = User.query.all()
+    output = []
+    for user in users:
+        output.append({
+            'id': user.id,
+            'username': user.username,
+            'email': user.email
+        })
+
+    return jsonify({'users': output})
 
 
 if __name__ == '__main__':

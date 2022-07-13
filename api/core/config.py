@@ -1,7 +1,6 @@
 import os
 
 from flask import Flask
-from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 
 
@@ -23,4 +22,4 @@ app.config['SQLALCHEMY_DATABASE_URI'] = Config.DB_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-manager = LoginManager(app)
+app.config['SECRET_KEY'] = 'secret-key-goes-here'
