@@ -1,4 +1,5 @@
 from flask import render_template, request, flash, make_response, jsonify
+from flask_admin import Admin
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
@@ -11,6 +12,7 @@ from datetime import datetime, timedelta
 
 app = app
 migrate = Migrate(app, db)
+admin = Admin(app)
 db = db
 db.create_all()
 
