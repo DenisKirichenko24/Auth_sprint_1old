@@ -1,18 +1,26 @@
-from flask import render_template, request, flash, make_response, jsonify
+from flask import request, make_response, jsonify
+from redis import Redis
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
-from core.config import db, app
-from api.models.utils import token_required
+from flask_jwt_extended import create_refresh_token, JWTManager
+from core.config import db, app, Config
+from api.models.utils import token_required, refresh_token_required
 from api.models.users import User
 import jwt
-from datetime import datetime, timedelta
-
+from datetime import datetime, timedelta, timezone
+from core.redis import RedisStorage
 
 app = app
 migrate = Migrate(app, db)
 db = db
 db.create_all()
+app.config['JWT_SECRET_KEY'] = 'secret_jwt_key'
+ref = JWTManager(app)
+config = Config()
+redis = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, db=0)
+token_storage = RedisStorage(redis)
+token_expire = 43200  # время действия токена(месяц)
 
 
 def main(flask_app):
@@ -27,7 +35,6 @@ def main(flask_app):
 @app.route('/login', methods=['POST'])
 def login():
     auth = request.form
-    print(auth.get('password'))
 
     if not auth or not auth.get('email') or not auth.get('password'):
         return make_response(
@@ -49,12 +56,14 @@ def login():
 
     if check_password_hash(user.password, auth.get('password')):
         try:
-            data = datetime.now() + timedelta(minutes=30)
+            time_data = datetime.now(tz=timezone.utc) + timedelta(seconds=1)
             token = jwt.encode({
                 'id': user.id,
-                'exp': data
+                'exp': time_data
             }, app.config['SECRET_KEY'])
-            return make_response(jsonify({'token': token}), 201)
+            refresh_token = create_refresh_token(identity=user.password)
+            token_storage.set(refresh_token, user.id, token_expire)
+            return make_response(jsonify({'access_token': token}, {'refresh_token': refresh_token}), 201)
         except Exception as e:
             print(e)
     return make_response(
@@ -88,6 +97,23 @@ def signup():
         return make_response('User already exists. Please Log in.', 202)
 
 
+@app.route('/refresh', methods=['POST'])
+@refresh_token_required
+def refresh_token(refresh_token):
+    user_id = token_storage.get(refresh_token)
+    token_storage.remove(refresh_token)
+    time_data = datetime.now() + timedelta(minutes=30)
+    token = jwt.encode({
+        'id': user_id,
+        'exp': time_data
+    }, app.config['SECRET_KEY'])
+    refresh_token = create_refresh_token(identity=user_id)
+    token_storage.set(refresh_token, user_id, token_expire)
+    print(token)
+    print(refresh_token)
+    return make_response(jsonify({'new_access_token': token}, {'new_refresh_token': refresh_token}), 201)
+
+
 @app.route('/user', methods=['GET'])
 @token_required
 def get_all_users(current_user):
@@ -99,7 +125,6 @@ def get_all_users(current_user):
             'username': user.username,
             'email': user.email
         })
-
     return jsonify({'users': output})
 
 
