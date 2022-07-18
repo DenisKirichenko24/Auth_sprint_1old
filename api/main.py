@@ -21,16 +21,12 @@ config = Config()
 redis = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, db=0)
 token_storage = RedisStorage(redis)
 token_expire = 43200  # время действия токена(месяц)
+user = User()
 
 
 def main(flask_app):
     flask_app.run(debug=True, host='0.0.0.0', port=5001)
 
-
-# @app.route('/')
-# @token_required
-# def index():
-#     return render_template('login.html')
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -56,7 +52,7 @@ def login():
 
     if check_password_hash(user.password, auth.get('password')):
         try:
-            time_data = datetime.now(tz=timezone.utc) + timedelta(seconds=1)
+            time_data = datetime.now(tz=timezone.utc) + timedelta(minutes=30)
             token = jwt.encode({
                 'id': user.id,
                 'exp': time_data
@@ -71,6 +67,47 @@ def login():
         403,
         {'WWW-Authenticate': 'Basic realm ="Wrong Password !!"'}
     )
+
+
+@app.route('/change_password', methods=['POST'])
+@token_required
+def change_password(*args):
+    change = request.form
+    user = User.query \
+        .filter_by(email=change.get('email')) \
+        .first()
+    old_password = change.get('old_password')
+    new_password = change.get('new_password')
+
+    if not check_password_hash(user.password, old_password):
+        return make_response('password is not correct', 403)
+
+    user.password = generate_password_hash(new_password)
+    db.session.merge(user)
+    db.session.commit()
+    return make_response(
+        {
+            "message": "password changed successfully",
+        })
+
+
+@app.route('/change_data', methods=['POST'])
+@token_required
+def change_personal_data(*args):
+    data_change = request.form
+    user = User.query \
+        .filter_by(email=data_change.get('email')) \
+        .first()
+    new_email = data_change.get('new_email')
+    new_username = data_change.get('new_username')
+    user.username = new_username
+    user.email = new_email
+    db.session.merge(user)
+    db.session.commit()
+    return make_response(
+        {
+            "message": "Personal data changed successfully",
+        })
 
 
 @app.route('/signup', methods=['POST'])
