@@ -16,3 +16,6 @@ Werkzeug==2.1.2
 Flask-Admin==1.6.0
 pytest==7.1.2
 flake8==4.0
+redis==4.3.4
+Flask-JWT-Extended==4.4.2
+SQLAlchemy==1.4.39

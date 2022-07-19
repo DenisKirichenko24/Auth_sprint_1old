@@ -16,6 +16,9 @@ class Config:
     FLASK_HOST: str = os.getenv('FLASK_HOST', '0.0.0.0')
     FLASK_PORT: int = int(os.getenv('FLASK_PORT', 5001))
 
+    REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+    REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = Config.DB_URL

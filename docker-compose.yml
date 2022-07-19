@@ -16,3 +16,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
