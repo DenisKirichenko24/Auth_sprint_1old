@@ -20,7 +20,11 @@ def token_required(f):
 
         try:
             # decoding the payload to fetch the stored details
-            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"], verify_exp=True)
+            data = jwt.decode(
+                token, app.config['SECRET_KEY'],
+                algorithms=["HS256"],
+                verify_exp=True
+            )
             current_user = User.query \
                 .filter_by(id=data['id']) \
                 .first()
