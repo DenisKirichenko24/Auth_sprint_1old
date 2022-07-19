@@ -3,7 +3,6 @@ from functools import wraps
 from flask import request, jsonify
 from api.core.config import app
 from api.models.users import User
-from datetime import datetime, timedelta
 
 
 def token_required(f):
@@ -36,12 +35,10 @@ def token_required(f):
 def refresh_token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        # jwt is passed in the request header
         if 'refresh-token' in request.headers:
             token = request.headers['refresh_token']
             return f(token, *args, **kwargs)
-        # return 401 if token is not passed
-        return jsonify({  # redirect to refresh
+        return jsonify({
                 'message': 'Refresh token is invalid !!'
             }), 401
 

@@ -3,10 +3,11 @@ from redis import Redis
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
-from flask_jwt_extended import create_refresh_token, JWTManager
+from flask_jwt_extended import create_refresh_token, JWTManager, get_jwt_identity
 from core.config import db, app, Config
 from api.models.utils import token_required, refresh_token_required
 from api.models.users import User
+from api.models.session import Session
 import jwt
 from datetime import datetime, timedelta, timezone
 from core.redis import RedisStorage
@@ -26,6 +27,35 @@ user = User()
 
 def main(flask_app):
     flask_app.run(debug=True, host='0.0.0.0', port=5001)
+
+
+def add_auth_history(user, request):
+    auth = Session(user_id=user.id, login_time=datetime.now())
+    db.session.add(auth)
+    db.session.commit()
+
+
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.form
+    username, email = data.get('username'), data.get('email')
+    password = data.get('password')
+    user = User.query \
+        .filter_by(email=email) \
+        .first()
+    if not user:
+
+        user = User(
+            username=username,
+            email=email,
+            password=generate_password_hash(password)
+        )
+
+        db.session.add(user)
+        db.session.commit()
+        return make_response('Successfully registered.', 201)
+    else:
+        return make_response('User already exists. Please Log in.', 202)
 
 
 @app.route('/login', methods=['POST'])
@@ -59,6 +89,7 @@ def login():
             }, app.config['SECRET_KEY'])
             refresh_token = create_refresh_token(identity=user.password)
             token_storage.set(refresh_token, user.id, token_expire)
+            add_auth_history(user, request)
             return make_response(jsonify({'access_token': token}, {'refresh_token': refresh_token}), 201)
         except Exception as e:
             print(e)
@@ -67,6 +98,21 @@ def login():
         403,
         {'WWW-Authenticate': 'Basic realm ="Wrong Password !!"'}
     )
+
+
+@app.route('/refresh', methods=['POST'])
+@refresh_token_required
+def refresh_token(refresh_token):
+    user_id = token_storage.get(refresh_token)
+    token_storage.remove(refresh_token)
+    time_data = datetime.now() + timedelta(minutes=30)
+    token = jwt.encode({
+        'id': user_id,
+        'exp': time_data
+    }, app.config['SECRET_KEY'])
+    refresh_token = create_refresh_token(identity=user_id)
+    token_storage.set(refresh_token, user_id, token_expire)
+    return make_response(jsonify({'new_access_token': token}, {'new_refresh_token': refresh_token}), 201)
 
 
 @app.route('/change_password', methods=['POST'])
@@ -87,7 +133,7 @@ def change_password(*args):
     db.session.commit()
     return make_response(
         {
-            "message": "password changed successfully",
+            "message": "Password was changed successfully",
         })
 
 
@@ -106,49 +152,8 @@ def change_personal_data(*args):
     db.session.commit()
     return make_response(
         {
-            "message": "Personal data changed successfully",
+            "message": "Personal data was changed successfully",
         })
-
-
-@app.route('/signup', methods=['POST'])
-def signup():
-    data = request.form
-    username, email = data.get('username'), data.get('email')
-    password = data.get('password')
-    user = User.query \
-        .filter_by(email=email) \
-        .first()
-    if not user:
-
-        user = User(
-            username=username,
-            email=email,
-            password=generate_password_hash(password)
-        )
-
-        db.session.add(user)
-        db.session.commit()
-
-        return make_response('Successfully registered.', 201)
-    else:
-        return make_response('User already exists. Please Log in.', 202)
-
-
-@app.route('/refresh', methods=['POST'])
-@refresh_token_required
-def refresh_token(refresh_token):
-    user_id = token_storage.get(refresh_token)
-    token_storage.remove(refresh_token)
-    time_data = datetime.now() + timedelta(minutes=30)
-    token = jwt.encode({
-        'id': user_id,
-        'exp': time_data
-    }, app.config['SECRET_KEY'])
-    refresh_token = create_refresh_token(identity=user_id)
-    token_storage.set(refresh_token, user_id, token_expire)
-    print(token)
-    print(refresh_token)
-    return make_response(jsonify({'new_access_token': token}, {'new_refresh_token': refresh_token}), 201)
 
 
 @app.route('/user', methods=['GET'])
@@ -163,6 +168,30 @@ def get_all_users(current_user):
             'email': user.email
         })
     return jsonify({'users': output})
+
+
+@app.route('/history', methods=['GET'])
+@token_required
+def get_history(current_user):
+    history = request.form
+    user = User.query \
+        .filter_by(email=history.get('email')) \
+        .first()
+    history = db.session.query(Session).filter(Session.user_id == user.id)
+    output = []
+    for i in history:
+        output.append({
+            'id': i.id,
+            'user_id': user.id,
+            'login_time': i.login_time
+        })
+    return jsonify({'history': output})
+
+
+@app.route('/logout', methods=['POST'])
+@token_required
+def logout(access_token):
+    return make_response({"message": 'You successfully logged out'})
 
 
 if __name__ == '__main__':
