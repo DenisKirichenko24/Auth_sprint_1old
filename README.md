@@ -26,21 +26,27 @@ https://github.com/DenisKirichenko24/Auth_sprint_1
 2. Эндпоинт /signup POST-запрос
   ```Регистрация пользователя с передачей в body "username", "email", "password"```
 3. Эндпоинт /login POST-запрос. Также получение двух токенов (access и refresh)
+
   ```Вход в аккаунт с передачей в body "email", "password" ```
-4. Эндпоинт /refresh POST-запрос
-  ```Сбрасывание рефреш-токена и выдача новой пары токенов```
+  
+4. Эндпоинт /refresh POST-запрос. Сбрасывание рефреш-токена и выдача новой пары токенов.
+
   ```В headers запроса отправляем access-токен пользователя KEY: 'refresh-token', value: 'refresh token'```
-5. Эндпоинт /change_password POST-запрос
-  ```Смена пароля для текущего пользователя```
+  
+5. Эндпоинт /change_password POST-запрос. Смена пароля для текущего пользователя
+
   ```В body передаем "email", "old_password", "new_password"```
   ```В headers access-токен пользователя```
   ```В headers запроса отправляем access-токен пользователя KEY: 'x-access-token', value: 'access token'```
-6. Эндпоинт /change_data POST-запрос
-  ```Смена персональных данных (юзернейма и почты) для текущего пользователя```
+  
+6. Эндпоинт /change_data POST-запрос. Смена персональных данных (юзернейма и почты) для текущего пользователя
+
   ```для смены почты - В body передаем "email", "old_mail", "new_mail"```
   ```для смены юзернейма - В body передаем "email", "old_username", "new_username"```
   ```В headers запроса отправляем access-токен пользователя KEY: 'x-access-token', value: 'access token'```
- 7. Эндпоинт /history GET-запрос
-  ```Получение все истории входов текущего пользователя```
+  
+ 7. Эндпоинт /history GET-запрос. Получение все истории входов текущего пользователя
+ 
   ```В body запроса передаем "email" пользователя```
   ```В headers запроса отправляем access-токен пользователя KEY: 'x-access-token', value: 'access token'```
+  
