@@ -4,11 +4,10 @@ from flask_admin import Admin
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
 from core.config import db, app
-from api.models.utils import token_required
-from api.models.users import User
+from models.utils import token_required
+from models.users import User
 import jwt
 from datetime import datetime, timedelta
-
 
 app = app
 migrate = Migrate(app, db)
@@ -20,11 +19,6 @@ db.create_all()
 def main(flask_app):
     flask_app.run(debug=True, host='0.0.0.0', port=5001)
 
-
-# @app.route('/')
-# @token_required
-# def index():
-#     return render_template('login.html')
 
 @app.route('/login', methods=['POST'])
 def login():
