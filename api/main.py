@@ -1,17 +1,21 @@
-from flask import render_template, request, flash, make_response, jsonify
+from flask import request, make_response, jsonify
 from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
 from core.config import db, app
 from models.utils import token_required
 from models.users import User
+from models.roles import Role
 import jwt
 from datetime import datetime, timedelta
 
 app = app
 migrate = Migrate(app, db)
 admin = Admin(app)
+admin.add_view(ModelView(User, db.session))
+admin.add_view(ModelView(Role, db.session))
 db = db
 db.create_all()
 

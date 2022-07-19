@@ -18,11 +18,13 @@ def token_required(f):
 
         try:
             # decoding the payload to fetch the stored details
-            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+            data = jwt.decode(
+                token, app.config['SECRET_KEY'], algorithms=["HS256"]
+            )
             current_user = User.query \
                 .filter_by(id=data['id']) \
                 .first()
-        except:
+        except Exception:
             return jsonify({
                 'message': 'Token is invalid !!'
             }), 401

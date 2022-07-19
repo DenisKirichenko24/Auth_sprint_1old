@@ -10,8 +10,8 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.Text(), nullable=False)
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'),
+                        nullable=True)
 
-
-# @manager.user_loader
-# def load_user(user_id):
-#     return User.get(user_id)
+    def __repr__(self):
+        return '<User %r>' % self.username

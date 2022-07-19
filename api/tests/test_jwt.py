@@ -4,7 +4,8 @@ import jwt
 
 
 def test_exception_jwt():
-    exp = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(seconds=1)
+    exp = datetime.datetime.now(tz=datetime.timezone.utc) - \
+          datetime.timedelta(seconds=1)
     jwt_payload = jwt.encode(
         {"user_id": 1234, "exp": exp},
         "secret",
@@ -16,7 +17,8 @@ def test_exception_jwt():
 
 
 def test_success_jwt():
-    exp = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(seconds=1)
+    exp = datetime.datetime.now(tz=datetime.timezone.utc) + \
+          datetime.timedelta(seconds=1)
     data = {"user_id": 1234, "exp": exp}
     jwt_payload = jwt.encode(
         data,
@@ -24,4 +26,3 @@ def test_success_jwt():
     )
     token = jwt.decode(jwt_payload, "secret", algorithms=["HS256"])
     assert token['user_id'] == data['user_id']
-
