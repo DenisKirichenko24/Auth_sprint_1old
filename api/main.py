@@ -1,15 +1,16 @@
+from datetime import datetime, timedelta
+
+import jwt
 from flask import request, make_response, jsonify
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
-
-from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
+from werkzeug.security import generate_password_hash, check_password_hash
+
 from core.config import db, app
-from models.utils import token_required
-from models.users import User
 from models.roles import Role
-import jwt
-from datetime import datetime, timedelta
+from models.users import User
+from models.utils import token_required
 
 app = app
 migrate = Migrate(app, db)

@@ -1,6 +1,7 @@
 import datetime
-import pytest
+
 import jwt
+import pytest
 
 
 def test_exception_jwt():

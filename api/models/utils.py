@@ -1,7 +1,9 @@
-import jwt
 from functools import wraps
-from flask import request, jsonify
+
+import jwt
 from core.config import app
+from flask import request, jsonify
+
 from .users import User
 
 
