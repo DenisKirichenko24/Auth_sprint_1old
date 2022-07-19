@@ -3,7 +3,7 @@ from redis import Redis
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
-from flask_jwt_extended import create_refresh_token, JWTManager, get_jwt_identity
+from flask_jwt_extended import create_refresh_token, JWTManager
 from core.config import db, app, Config
 from api.models.utils import token_required, refresh_token_required
 from api.models.users import User
@@ -77,7 +77,8 @@ def login():
         return make_response(
             'User not found',
             401,
-            {'WWW-Authenticate': 'Basic realm ="User does not exist !!"'}
+            {'WWW-Authenticate': 'Basic realm = \
+            "User does not exist !!"'}
         )
 
     if check_password_hash(user.password, auth.get('password')):
@@ -90,7 +91,9 @@ def login():
             refresh_token = create_refresh_token(identity=user.password)
             token_storage.set(refresh_token, user.id, token_expire)
             add_auth_history(user, request)
-            return make_response(jsonify({'access_token': token}, {'refresh_token': refresh_token}), 201)
+            return make_response(jsonify({'access_token': token},
+                                         {'refresh_token': refresh_token}),
+                                 201)
         except Exception as e:
             print(e)
     return make_response(
@@ -112,7 +115,8 @@ def refresh_token(refresh_token):
     }, app.config['SECRET_KEY'])
     refresh_token = create_refresh_token(identity=user_id)
     token_storage.set(refresh_token, user_id, token_expire)
-    return make_response(jsonify({'new_access_token': token}, {'new_refresh_token': refresh_token}), 201)
+    return make_response(jsonify({'new_access_token': token},
+                                 {'new_refresh_token': refresh_token}), 201)
 
 
 @app.route('/change_password', methods=['POST'])
