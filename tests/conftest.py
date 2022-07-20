@@ -9,7 +9,11 @@ settings = TestSettings()
 
 @pytest.fixture
 def make_get_request():
-    def inner(method: str, params: dict = None, headers: dict = None) -> Response:
+    def inner(
+            method: str,
+            params: dict = None,
+            headers: dict = None
+    ) -> Response:
         params = params or {}
         headers = headers or {}
         url = settings.base_api + method
@@ -21,7 +25,11 @@ def make_get_request():
 
 @pytest.fixture
 def make_post_request():
-    def inner(method: str, data: dict = None, headers: dict = None) -> Response:
+    def inner(
+            method: str,
+            data: dict = None,
+            headers: dict = None
+    ) -> Response:
         data = data or {}
         headers = headers or {}
         url = settings.base_api + method

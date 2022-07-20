@@ -1,5 +1,3 @@
-import datetime
-
 from tests.settings import TestSettings
 
 settings = TestSettings()
@@ -23,7 +21,8 @@ class TestEndpoints:
         """Тест на регистрирование нового пользователя,
         если пользователь уже есть, то сообщить об этом"""
         response = make_post_request("/signup", data=BaseData.signup_data)
-        assert response.status_code == 201 or 202  # 201 - зарегистрировать пользователя,
+        assert response.status_code == 201 or 202
+        # 201 - зарегистрировать пользователя,
         # 202 - такой пользователь уже есть
 
     def test_success_login(self, make_post_request):
@@ -79,15 +78,29 @@ class TestEndpoints:
         email = BaseData.email
         old_password = BaseData.password
         password = 'change'
-        change_data = {'email': email, 'old_password': old_password, 'new_password': password}
-        change = make_post_request("/change_password", data=change_data, headers=access_token)
+        change_data = {
+            'email': email,
+            'old_password': old_password,
+            'new_password': password
+        }
+        change = make_post_request(
+            "/change_password", data=change_data, headers=access_token
+        )
         assert change.status_code == 200
 
-        response = make_post_request("/login", {'email': email, 'password': password})
+        response = make_post_request(
+            "/login", {'email': email, 'password': password}
+        )
         assert response.status_code == 201
 
-        return_old_password = {'email': email, 'old_password': password, 'new_password': old_password}
-        change = make_post_request("/change_password", data=return_old_password, headers=access_token)
+        return_old_password = {
+            'email': email,
+            'old_password': password,
+            'new_password': old_password
+        }
+        change = make_post_request(
+            "/change_password", data=return_old_password, headers=access_token
+        )
         assert change.status_code == 200
 
     # def change_personal_data(self, make_post_request):
@@ -105,13 +118,26 @@ class TestEndpoints:
     #
     #     new_email = 'change@mail.ru'
     #     new_username = 'change'
-    #     change_data = {'email': old_email, 'new_email': new_email, 'new_username': new_username}
-    #     change = make_post_request("/change_data", data=change_data, headers=access_token)
+    #     change_data = {
+    #         'email': old_email,
+    #         'new_email': new_email,
+    #         'new_username': new_username}
+    #     change = make_post_request(
+    #         "/change_data", data=change_data, headers=access_token
+    #     )
     #     assert change.status_code == 200
     #
-    #     response = make_post_request("/login", {'email': new_email, 'password': BaseData.password})
+    #     response = make_post_request(
+    #         "/login", {'email': new_email, 'password': BaseData.password}
+    #     )
     #     assert response.status_code == 201
     #
-    #     change_data = {'email': old_email, 'new_email': new_email, 'new_username': new_username}
-    #     change = make_post_request("/change_data", data=change_data, headers=access_token)
+    # change_data = {
+    #     'email': old_email,
+    #     'new_email': new_email,
+    #     'new_username': new_username
+    # }
+    # change = make_post_request(
+    #     "/change_data", data=change_data, headers=access_token
+    # )
     #     assert change.status_code == 200
