@@ -1,9 +1,10 @@
-import jwt
 from functools import wraps
+
+import jwt
+from core.config import app
 from flask import request, jsonify
-from api.core.config import app
-from api.models.users import User
-from datetime import datetime, timedelta
+
+from .users import User
 
 
 def token_required(f):
@@ -19,7 +20,11 @@ def token_required(f):
 
         try:
             # decoding the payload to fetch the stored details
-            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"], verify_exp=True)
+            data = jwt.decode(
+                token, app.config['SECRET_KEY'],
+                algorithms=["HS256"],
+                verify_exp=True
+            )
             current_user = User.query \
                 .filter_by(id=data['id']) \
                 .first()
@@ -36,12 +41,10 @@ def token_required(f):
 def refresh_token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        # jwt is passed in the request header
         if 'refresh-token' in request.headers:
             token = request.headers['refresh_token']
             return f(token, *args, **kwargs)
-        # return 401 if token is not passed
-        return jsonify({  # redirect to refresh
+        return jsonify({
                 'message': 'Refresh token is invalid !!'
             }), 401
 
