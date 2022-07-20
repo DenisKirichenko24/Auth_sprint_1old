@@ -9,12 +9,12 @@ from flask_migrate import Migrate
 from redis import Redis
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from api.models.session import Session
-from api.models.utils import token_required, refresh_token_required
-from api.core.config import db, app, Config
-from api.core.redis import RedisStorage
-from api.models.roles import Role
-from api.models.users import User
+from models.session import Session
+from models.utils import token_required, refresh_token_required
+from core.config import db, app, Config
+from core.redis import RedisStorage
+from models.roles import Role
+from models.users import User
 
 
 migrate = Migrate(app, db)
@@ -32,6 +32,7 @@ user = User()
 
 
 routes = Blueprint('routes', __name__)
+
 
 def add_auth_history(user, request):
     auth = Session(user_id=user.id, login_time=datetime.now())
@@ -145,16 +146,13 @@ def change_password(*args):
 
 @routes.route('/change_data', methods=['POST'])
 @token_required
-def change_personal_data(*args):
+def change_personal_data(current_user, *args):
     data_change = request.form
-    user = User.query \
-        .filter_by(email=data_change.get('email')) \
-        .first()
     new_email = data_change.get('new_email')
     new_username = data_change.get('new_username')
-    user.username = new_username
-    user.email = new_email
-    db.session.merge(user)
+    current_user.username = new_username
+    current_user.email = new_email
+    db.session.merge(current_user)
     db.session.commit()
     return make_response(
         {
@@ -179,18 +177,14 @@ def get_all_users(current_user):
 @routes.route('/history', methods=['GET'])
 @token_required
 def get_history(current_user):
-    history = request.form
-    user = User.query \
-        .filter_by(email=history.get('email')) \
-        .first()
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
-    history = db.session.query(Session).filter(Session.user_id == user.id).paginate(page=page, per_page=per_page)
+    history = db.session.query(Session).filter(Session.user_id == current_user.id).paginate(page=page, per_page=per_page)  # noqa:E501
     output = []
     for i in history.items:
         output.append({
             'id': i.id,
-            'user_id': user.id,
+            'user_id': current_user.id,
             'login_time': i.login_time
         })
     return jsonify({'history': output})

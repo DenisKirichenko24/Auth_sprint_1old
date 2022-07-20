@@ -1,6 +1,4 @@
-import os
-
-from flask import Flask, Blueprint
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from pydantic import BaseSettings, Field
 
@@ -13,7 +11,6 @@ class Config(BaseSettings):
     DB_PORT: int = Field(5432, env='DB_PORT')
     DB_NAME: str = Field('users_jwt_base', env='DB_NAME')
 
-
     FLASK_HOST: str = Field('0.0.0.0', env='FLASK_HOST')
     FLASK_PORT: int = Field(5001, env='FLASK_PORT')
 
@@ -23,7 +20,7 @@ class Config(BaseSettings):
 
 app = Flask(__name__)
 config = Config()
-DB_URL = f'{config.DB}+psycopg2://{config.DB_USER}:{config.DB_PASSWORD}@{config.DB_HOST}/{config.DB_NAME}'
+DB_URL = f'{config.DB}+psycopg2://{config.DB_USER}:{config.DB_PASSWORD}@{config.DB_HOST}/{config.DB_NAME}'  # noqa:E501
 app.config['SQLALCHEMY_DATABASE_URI'] = DB_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 

@@ -1,5 +1,5 @@
 from core.config import app
-from api.v1.routes import routes
+from v1.routes import routes
 
 
 app.register_blueprint(routes)
