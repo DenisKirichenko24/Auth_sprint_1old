@@ -161,7 +161,7 @@ def change_personal_data(current_user, *args):
 
 
 @routes.route('/user', methods=['GET'])
-@token_required
+# @token_required
 def get_all_users(current_user):
     users = User.query.all()
     output = []
