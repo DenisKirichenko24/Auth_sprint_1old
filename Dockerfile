@@ -1,10 +1,19 @@
-FROM python:3.10-bullseye
+FROM python:3.8-slim-buster
 
 WORKDIR /app
 
 COPY ./requirements.txt ./
 
-RUN pip3 install --upgrade pip --no-cache-dir && pip3 install -r requirements.txt --no-cache-dir
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=main.py
+ENV FLASK_DEBUG=1
+ENV FLASK_RUN_HOST=0.0.0.0
+ENV FLASK_ENV=development
+
+COPY api ./
+
+RUN pip install --upgrade pip --no-cache-dir && pip install -r requirements.txt --no-cache-dir
 
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["python", "-m", "flask", "run"]
