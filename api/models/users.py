@@ -1,4 +1,4 @@
-from core.config import db
+from api.core.config import db
 from flask_login import UserMixin
 
 

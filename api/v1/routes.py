@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv
 
 import jwt
 import requests
@@ -11,18 +12,18 @@ from flask_migrate import Migrate
 from redis import Redis
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from models.session import Session
-from models.utils import token_required, refresh_token_required
-from core.config import db, app, Config
-from core.redis import RedisStorage
-from models.roles import Role
-from models.users import User
+from api.models.session import Session
+from api.models.utils import token_required, refresh_token_required
+from api.core.config import db, app, Config
+from api.core.redis import RedisStorage
+from api.models.roles import Role
+from api.models.users import User
 
 migrate = Migrate(app, db)
 admin = Admin(app)
 admin.add_view(ModelView(User, db.session))
 admin.add_view(ModelView(Role, db.session))
-
+load_dotenv()
 app.config['JWT_SECRET_KEY'] = 'secret_jwt_key'
 ref = JWTManager(app)
 config = Config()
@@ -191,27 +192,23 @@ def get_history(current_user):
 
 
 @routes.route('/yandex', methods=['POST'])
-@token_required
 def yandex_auth(*args):
     client_id = os.getenv('YANDEX_ID')
-    req = requests.request(url=f'https://oauth.yandex.ru/authorize?response_type=code&client_id=c925c5fc9fad4e5993ac0be4091c374c', method='GET')
+    req = requests.request(url=f'https://oauth.yandex.ru/authorize?response_type=code&client_id={client_id}',
+                           method='GET')
     return req.url
+
 
 @routes.route('/get_auth_token', methods=['GET', 'POST'])
 def get_auth_code(*args):
-    code = request.args.get('code')
-    # print(code)
-    json_token = {
-        'grant_type': 'authorization_code',
-        'code': code,
-        'client_id': 'c925c5fc9fad4e5993ac0be4091c374c',
-        'client_secret': 'f70fa9089a694f99b36c304feb438840'
-    }
-    token_request = requests.post('https://oauth.yandex.ru/token', params=json_token)
-    return make_response(
-        {
-            "message": "Token in browser",
-        })
+    client_id = os.getenv('YANDEX_ID')
+    code_ = request.args.get('code')
+    yandex_token_form = request.form
+    authorization_code = yandex_token_form.get('authorization_code')
+    code = yandex_token_form.get('code')
+    client_id = yandex_token_form.get('client_id')
+    client_secret = yandex_token_form.get('client_secret')
+    return make_response({"message": 'OK'})
 
 
 @routes.route('/logout', methods=['POST'])
