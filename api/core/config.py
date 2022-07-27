@@ -12,7 +12,7 @@ class Config(BaseSettings):
     DB_NAME: str = Field('users_jwt_base', env='DB_NAME')
 
     FLASK_HOST: str = Field('0.0.0.0', env='FLASK_HOST')
-    FLASK_PORT: int = Field(5001, env='FLASK_PORT')
+    FLASK_PORT: int = Field(5000, env='FLASK_PORT')
 
     REDIS_HOST = Field('localhost', env='REDIS_HOST')
     REDIS_PORT = Field(6379, env='REDIS_PORT')

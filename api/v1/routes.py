@@ -1,6 +1,8 @@
+import os
 from datetime import datetime, timedelta, timezone
 
 import jwt
+import requests
 from flask import request, make_response, jsonify, Blueprint
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
@@ -16,7 +18,6 @@ from core.redis import RedisStorage
 from models.roles import Role
 from models.users import User
 
-
 migrate = Migrate(app, db)
 admin = Admin(app)
 admin.add_view(ModelView(User, db.session))
@@ -29,7 +30,6 @@ redis = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, db=0)
 token_storage = RedisStorage(redis)
 token_expire = 43200  # время действия токена(месяц)
 user = User()
-
 
 routes = Blueprint('routes', __name__)
 
@@ -49,7 +49,6 @@ def signup():
         .filter_by(email=email) \
         .first()
     if not user:
-
         user = User(
             username=username,
             email=email,
@@ -179,7 +178,8 @@ def get_all_users(current_user):
 def get_history(current_user):
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
-    history = db.session.query(Session).filter(Session.user_id == current_user.id).paginate(page=page, per_page=per_page)  # noqa:E501
+    history = db.session.query(Session).filter(Session.user_id == current_user.id).paginate(page=page,
+                                                                                            per_page=per_page)  # noqa:E501
     output = []
     for i in history.items:
         output.append({
@@ -188,6 +188,30 @@ def get_history(current_user):
             'login_time': i.login_time
         })
     return jsonify({'history': output})
+
+
+@routes.route('/yandex', methods=['POST'])
+@token_required
+def yandex_auth(*args):
+    client_id = os.getenv('YANDEX_ID')
+    req = requests.request(url=f'https://oauth.yandex.ru/authorize?response_type=code&client_id=c925c5fc9fad4e5993ac0be4091c374c', method='GET')
+    return req.url
+
+@routes.route('/get_auth_token', methods=['GET', 'POST'])
+def get_auth_code(*args):
+    code = request.args.get('code')
+    # print(code)
+    json_token = {
+        'grant_type': 'authorization_code',
+        'code': code,
+        'client_id': 'c925c5fc9fad4e5993ac0be4091c374c',
+        'client_secret': 'f70fa9089a694f99b36c304feb438840'
+    }
+    token_request = requests.post('https://oauth.yandex.ru/token', params=json_token)
+    return make_response(
+        {
+            "message": "Token in browser",
+        })
 
 
 @routes.route('/logout', methods=['POST'])
