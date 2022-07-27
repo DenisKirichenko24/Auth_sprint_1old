@@ -1,21 +1,18 @@
 from datetime import datetime, timedelta, timezone
 
 import jwt
+from core.config import db, app, Config
+from core.redis import RedisStorage
 from flask import request, make_response, jsonify, Blueprint
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
-from flask_jwt_extended import create_refresh_token, JWTManager
 from flask_migrate import Migrate
+from models.roles import Role
+from models.session import Session
+from models.users import User
+from models.utils import token_required, refresh_token_required
 from redis import Redis
 from werkzeug.security import generate_password_hash, check_password_hash
-
-from models.session import Session
-from models.utils import token_required, refresh_token_required
-from core.config import db, app, Config
-from core.redis import RedisStorage
-from models.roles import Role
-from models.users import User
-
 
 migrate = Migrate(app, db)
 admin = Admin(app)
@@ -23,13 +20,11 @@ admin.add_view(ModelView(User, db.session))
 admin.add_view(ModelView(Role, db.session))
 
 app.config['JWT_SECRET_KEY'] = 'secret_jwt_key'
-ref = JWTManager(app)
 config = Config()
 redis = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, db=0)
 token_storage = RedisStorage(redis)
 token_expire = 43200  # время действия токена(месяц)
 user = User()
-
 
 routes = Blueprint('routes', __name__)
 
@@ -49,7 +44,6 @@ def signup():
         .filter_by(email=email) \
         .first()
     if not user:
-
         user = User(
             username=username,
             email=email,
@@ -91,7 +85,10 @@ def login():
                 'id': user.id,
                 'exp': time_data
             }, app.config['SECRET_KEY'])
-            refresh_token = create_refresh_token(identity=user.password)
+            refresh_token = jwt.encode({
+                'id': user.id
+            }, app.config[user.password])
+            # refresh_token = create_refresh_token(identity=user.password)
             token_storage.set(refresh_token, user.id, token_expire)
             add_auth_history(user, request)
             return make_response(jsonify({'access_token': token},
@@ -116,7 +113,10 @@ def refresh_token(refresh_token):
         'id': user_id,
         'exp': time_data
     }, app.config['SECRET_KEY'])
-    refresh_token = create_refresh_token(identity=user_id)
+    refresh_token = jwt.encode({
+        'id': user.id
+    }, app.config[user.password])
+    # refresh_token = create_refresh_token(identity=user_id)
     token_storage.set(refresh_token, user_id, token_expire)
     return make_response(jsonify({'new_access_token': token},
                                  {'new_refresh_token': refresh_token}), 201)
@@ -179,7 +179,8 @@ def get_all_users(current_user):
 def get_history(current_user):
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
-    history = db.session.query(Session).filter(Session.user_id == current_user.id).paginate(page=page, per_page=per_page)  # noqa:E501
+    history = db.session.query(Session).filter(
+        Session.user_id == current_user.id).paginate(page=page, per_page=per_page)  # noqa:E501
     output = []
     for i in history.items:
         output.append({

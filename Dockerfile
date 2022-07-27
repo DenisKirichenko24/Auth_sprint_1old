@@ -2,18 +2,21 @@ FROM python:3.8-slim-buster
 
 WORKDIR /app
 
+RUN python3 -m venv /opt/venv
+
 COPY ./requirements.txt ./
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED=1
-ENV FLASK_APP=main.py
+ENV FLASK_APP=api/main.py
 ENV FLASK_DEBUG=1
 ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_ENV=development
 
 COPY api ./
 
-RUN pip install --upgrade pip --no-cache-dir && pip install -r requirements.txt --no-cache-dir
+RUN . /opt/venv/bin/activate && pip install --upgrade pip --no-cache-dir && pip install -r requirements.txt --no-cache-dir
 
+EXPOSE 8000/tcp
 
-CMD ["python", "-m", "flask", "run"]
+CMD . /opt/venv/bin/activate && gunicorn --bind 0.0.0.0:8000 main:app
