@@ -4,7 +4,7 @@ import jwt
 from flask import request, make_response, jsonify, Blueprint
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
-from flask_jwt_extended import create_refresh_token, JWTManager
+from flask_jwt_extended import create_refresh_token
 from flask_migrate import Migrate
 from redis import Redis
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -23,7 +23,7 @@ admin.add_view(ModelView(User, db.session))
 admin.add_view(ModelView(Role, db.session))
 
 app.config['JWT_SECRET_KEY'] = 'secret_jwt_key'
-ref = JWTManager(app)
+# ref = JWTManager(app)
 config = Config()
 redis = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, db=0)
 token_storage = RedisStorage(redis)
@@ -161,8 +161,10 @@ def change_personal_data(current_user, *args):
 
 
 @routes.route('/user', methods=['GET'])
-@token_required
-def get_all_users(current_user):
+# @token_required
+def get_all_users():
+    test = request
+    print(test)
     users = User.query.all()
     output = []
     for user in users:
