@@ -191,23 +191,45 @@ def get_history(current_user):
     return jsonify({'history': output})
 
 
-@routes.route('/yandex', methods=['POST'])
+@routes.route('/yandex_auth', methods=['POST'])
 def yandex_auth(*args):
     client_id = os.getenv('YANDEX_ID')
-    req = requests.request(url=f'https://oauth.yandex.ru/authorize?response_type=code&client_id={client_id}',
-                           method='GET')
+    yandex_auth_uri = os.getenv('YANDEX_AUTH_URI')
+    req = requests.request(url=f'{yandex_auth_uri}&client_id={client_id}', method='GET')
     return req.url
 
 
 @routes.route('/get_auth_token', methods=['GET', 'POST'])
 def get_auth_code(*args):
-    client_id = os.getenv('YANDEX_ID')
-    code_ = request.args.get('code')
     yandex_token_form = request.form
     authorization_code = yandex_token_form.get('authorization_code')
     code = yandex_token_form.get('code')
     client_id = yandex_token_form.get('client_id')
     client_secret = yandex_token_form.get('client_secret')
+    return make_response({"message": 'OK'})
+
+
+@routes.route('/google_auth', methods=['POST'])
+def google_auth(*args):
+    google_id = os.getenv('GOOGLE_ID')
+    redirect_uri = os.getenv('REDIRECT_URI')
+    scope = os.getenv('SCOPE')
+    response_type = os.getenv('GOOGLE_RESPONSE_TYPE')
+    google_auth_uri = os.getenv('GOOGLE_AUTH_URI')
+    req = requests.request(
+        url=f'{google_auth_uri}redirect_uri={redirect_uri}&response_type={response_type}&client_id={google_id}&scope={scope}',
+        method='POST')  # noqa:E501
+    return req.url
+
+
+@routes.route('/google_auth_token', methods=['GET', 'POST'])
+def get_google_token(*args):
+    google_form = request.form
+    client_id = google_form.get('client_id')
+    code = google_form.get('code')  # код необходимо декодировать
+    client_secret = google_form.get('client_secret')
+    redirect_uri = google_form.get('redirect_uri')
+    grant_type = google_form.get('grant_type')
     return make_response({"message": 'OK'})
 
 
