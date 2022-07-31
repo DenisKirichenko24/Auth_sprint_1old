@@ -1,6 +1,5 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_restx import Api
 from pydantic import BaseSettings, Field
 
 
@@ -20,7 +19,6 @@ class Config(BaseSettings):
 
 
 app = Flask(__name__)
-api = Api(app, version='0.1', title='Auth API')
 config = Config()
 DB_URL = f'{config.DB}+psycopg2://{config.DB_USER}:{config.DB_PASSWORD}@{config.DB_HOST}/{config.DB_NAME}'  # noqa:E501
 app.config['SQLALCHEMY_DATABASE_URI'] = DB_URL
