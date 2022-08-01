@@ -4,20 +4,21 @@ from dotenv import load_dotenv
 
 import jwt
 import requests
+from core.config import db, app, Config
+from core.redis import RedisStorage
+
 from flask import request, make_response, jsonify, Blueprint
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_jwt_extended import create_refresh_token, JWTManager
 from flask_migrate import Migrate
+from models.roles import Role
+from models.session import Session
+from models.users import User
+from models.utils import token_required, refresh_token_required, rate_limit
 from redis import Redis
 from werkzeug.security import generate_password_hash, check_password_hash
-
-from api.models.session import Session
-from api.models.utils import token_required, refresh_token_required, rate_limit
-from api.core.config import db, app, Config
-from api.core.redis import RedisStorage
-from api.models.roles import Role
-from api.models.users import User
+from core.traces import trace
 
 
 migrate = Migrate(app, db)
@@ -26,12 +27,12 @@ admin.add_view(ModelView(User, db.session))
 admin.add_view(ModelView(Role, db.session))
 load_dotenv()
 app.config['JWT_SECRET_KEY'] = 'secret_jwt_key'
-ref = JWTManager(app)
 config = Config()
 redis = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, db=0)
 token_storage = RedisStorage(redis)
 token_expire = 43200  # время действия токена(месяц)
 user = User()
+jwt_manager = JWTManager(app)
 
 routes = Blueprint('routes', __name__)
 
@@ -43,6 +44,7 @@ def add_auth_history(user, request):
 
 
 @routes.route('/signup', methods=['POST'])
+@trace('reg')
 def signup():
     data = request.form
     username, email = data.get('username'), data.get('email')
@@ -64,6 +66,7 @@ def signup():
 
 @routes.route('/login', methods=['POST'])
 @rate_limit(10)
+@trace('login')
 def login():
     auth = request.form
 
@@ -111,6 +114,7 @@ def login():
 @routes.route('/refresh', methods=['POST'])
 @refresh_token_required
 @rate_limit(10)
+@trace('refresh')
 def refresh_token(refresh_token):
     user_id = token_storage.get(refresh_token)
     token_storage.remove(refresh_token)
@@ -128,6 +132,7 @@ def refresh_token(refresh_token):
 @routes.route('/change_password', methods=['POST'])
 @token_required
 @rate_limit(10)
+@trace('change_password')
 def change_password(*args):
     change = request.form
     user = User.query \
@@ -151,6 +156,7 @@ def change_password(*args):
 @routes.route('/change_data', methods=['POST'])
 @token_required
 @rate_limit(10)
+@trace('change_data')
 def change_personal_data(current_user, *args):
     data_change = request.form
     new_email = data_change.get('new_email')
@@ -168,6 +174,7 @@ def change_personal_data(current_user, *args):
 @routes.route('/user', methods=['GET'])
 @token_required
 @rate_limit(10)
+@trace('users')
 def get_all_users(current_user):
     users = User.query.all()
     output = []
@@ -183,11 +190,12 @@ def get_all_users(current_user):
 @routes.route('/history', methods=['GET'])
 @token_required
 @rate_limit(10)
+@trace('history')
 def get_history(current_user):
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
-    history = db.session.query(Session).filter(Session.user_id == current_user.id).paginate(page=page,
-                                                                                            per_page=per_page)  # noqa:E501
+    history = db.session.query(Session).filter(
+        Session.user_id == current_user.id).paginate(page=page, per_page=per_page)  # noqa:E501
     output = []
     for i in history.items:
         output.append({
@@ -247,5 +255,6 @@ def get_google_token(*args):
 @routes.route('/logout', methods=['POST'])
 @token_required
 @rate_limit(10)
+@trace('logout')
 def logout(access_token):
     return make_response({"message": 'You successfully logged out'})
