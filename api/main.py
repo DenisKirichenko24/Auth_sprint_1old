@@ -1,8 +1,15 @@
 from core.config import app
 from v1.routes import routes
-
+from flask import request
 
 app.register_blueprint(routes)
+
+
+@app.before_request
+def before_request():
+    request_id = request.headers.get('X-Request-Id')
+    if not request_id:
+        raise RuntimeError('request id is required')
 
 
 def main(flask_app):
