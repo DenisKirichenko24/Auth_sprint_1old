@@ -1,9 +1,17 @@
+import uuid
+
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import UniqueConstraint
-
+import enum
 from sqlalchemy import ForeignKey
 
 from core.config import db
+
+
+class DeviceTypeEnum(enum.Enum):
+    mobile = 'mobile'
+    web = 'web'
+    smart = 'smart'
 
 
 def create_partition(target, connection, **kw) -> None:
@@ -32,7 +40,7 @@ class Session(db.Model):
         }
     )
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
     user_id = db.Column(db.Integer, ForeignKey('user.id'))
     login_time = db.Column(db.DateTime)
     user_agent = db.Column(db.Text)

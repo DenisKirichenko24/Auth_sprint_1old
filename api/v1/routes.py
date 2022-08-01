@@ -4,18 +4,17 @@ import jwt
 from flask import request, make_response, jsonify, Blueprint
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
-from flask_jwt_extended import create_refresh_token
+from flask_jwt_extended import create_refresh_token, JWTManager
 from flask_migrate import Migrate
 from redis import Redis
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from models.session import Session
+from models.session import Session, DeviceTypeEnum
 from models.utils import token_required, refresh_token_required
 from core.config import db, app, Config
 from core.redis import RedisStorage
 from models.roles import Role
 from models.users import User
-
 
 migrate = Migrate(app, db)
 admin = Admin(app)
@@ -23,19 +22,31 @@ admin.add_view(ModelView(User, db.session))
 admin.add_view(ModelView(Role, db.session))
 
 app.config['JWT_SECRET_KEY'] = 'secret_jwt_key'
-# ref = JWTManager(app)
+ref = JWTManager(app)
 config = Config()
 redis = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, db=0)
 token_storage = RedisStorage(redis)
 token_expire = 43200  # время действия токена(месяц)
 user = User()
 
-
 routes = Blueprint('routes', __name__)
 
 
 def add_auth_history(user, request):
-    auth = Session(user_id=user.id, login_time=datetime.now())
+    user_agent = request.headers.get('User-Agent')
+    user_agent = user_agent.lower()
+    if 'iphone' or 'android' in user_agent:
+        device = DeviceTypeEnum.mobile.value
+    elif 'smart-tv' in user_agent:
+        device = DeviceTypeEnum.smart.value
+    else:
+        device = DeviceTypeEnum.web.value
+    auth = Session(
+        user_id=user.id,
+        login_time=datetime.now(),
+        user_agent=user_agent,
+        user_device_type=device
+    )
     db.session.add(auth)
     db.session.commit()
 
@@ -49,7 +60,6 @@ def signup():
         .filter_by(email=email) \
         .first()
     if not user:
-
         user = User(
             username=username,
             email=email,
@@ -163,8 +173,6 @@ def change_personal_data(current_user, *args):
 @routes.route('/user', methods=['GET'])
 # @token_required
 def get_all_users():
-    test = request
-    print(test)
     users = User.query.all()
     output = []
     for user in users:
@@ -181,7 +189,8 @@ def get_all_users():
 def get_history(current_user):
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
-    history = db.session.query(Session).filter(Session.user_id == current_user.id).paginate(page=page, per_page=per_page)  # noqa:E501
+    history = db.session.query(Session).filter(Session.user_id == current_user.id).paginate(page=page,
+                                                                                            per_page=per_page)  # noqa:E501
     output = []
     for i in history.items:
         output.append({
