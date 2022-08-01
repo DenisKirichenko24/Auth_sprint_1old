@@ -17,6 +17,14 @@ from models.users import User
 from models.utils import token_required, refresh_token_required
 from redis import Redis
 from werkzeug.security import generate_password_hash, check_password_hash
+
+from models.session import Session, DeviceTypeEnum
+from models.utils import token_required, refresh_token_required
+from core.config import db, app, Config
+from core.redis import RedisStorage
+from models.roles import Role
+from models.users import User
+
 from core.traces import trace
 
 
@@ -37,7 +45,20 @@ routes = Blueprint('routes', __name__)
 
 
 def add_auth_history(user, request):
-    auth = Session(user_id=user.id, login_time=datetime.now())
+    user_agent = request.headers.get('User-Agent')
+    user_agent = user_agent.lower()
+    if 'iphone' or 'android' in user_agent:
+        device = DeviceTypeEnum.mobile.value
+    elif 'smart-tv' in user_agent:
+        device = DeviceTypeEnum.smart.value
+    else:
+        device = DeviceTypeEnum.web.value
+    auth = Session(
+        user_id=user.id,
+        login_time=datetime.now(),
+        user_agent=user_agent,
+        user_device_type=device
+    )
     db.session.add(auth)
     db.session.commit()
 
