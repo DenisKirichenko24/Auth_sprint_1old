@@ -12,7 +12,7 @@ services:
     image: postgres
     container_name: postgres_auth
     ports:
-      - "$5433:5432"
+      - "5433:5432"
   redis-test:
     image: redis:latest
     ports:
