@@ -1,11 +1,23 @@
-FROM python:3.10-bullseye
+FROM python:3.8-slim-buster
 
 WORKDIR /app
 
+RUN python3 -m venv /opt/venv
+
 COPY ./requirements.txt ./
 
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=api/main.py
+ENV FLASK_DEBUG=1
+ENV FLASK_RUN_HOST=0.0.0.0
+ENV FLASK_ENV=development
+
+RUN . /opt/venv/bin/activate && pip install --upgrade pip --no-cache-dir  \
+    && pip install -r requirements.txt --no-cache-dir && pip uninstall jwt -y && pip uninstall PyJWT -y && pip install PyJWT
+
 COPY api ./
-RUN pip3 install --upgrade pip --no-cache-dir && pip3 install -r requirements.txt --no-cache-dir
 
+EXPOSE 8000/tcp
 
-CMD ["gunicorn --bind 0.0.0.0:5001 main:app"]
+CMD . /opt/venv/bin/activate && gunicorn --bind 0.0.0.0:8000 main:app
