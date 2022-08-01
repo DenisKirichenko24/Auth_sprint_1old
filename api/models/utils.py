@@ -1,7 +1,7 @@
 from functools import wraps
 
 import jwt
-from core.config import app
+from api.core.config import app
 from flask import request, jsonify
 
 from .users import User

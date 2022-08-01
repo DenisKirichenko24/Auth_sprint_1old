@@ -1,4 +1,4 @@
-from core.config import db
+from api.core.config import db
 
 
 class Role(db.Model):

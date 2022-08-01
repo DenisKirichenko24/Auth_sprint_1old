@@ -5,7 +5,7 @@ from sqlalchemy import UniqueConstraint
 import enum
 from sqlalchemy import ForeignKey
 
-from core.config import db
+from api.core.config import db
 
 
 class DeviceTypeEnum(enum.Enum):

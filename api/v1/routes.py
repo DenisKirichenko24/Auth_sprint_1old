@@ -1,6 +1,9 @@
+import os
 from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv
 
 import jwt
+import requests
 from core.config import db, app, Config
 from core.redis import RedisStorage
 from flask import request, make_response, jsonify, Blueprint
@@ -24,10 +27,12 @@ from models.users import User
 
 from core.traces import trace
 
+
 migrate = Migrate(app, db)
 admin = Admin(app)
 admin.add_view(ModelView(User, db.session))
 admin.add_view(ModelView(Role, db.session))
+load_dotenv()
 app.config['JWT_SECRET_KEY'] = 'secret_jwt_key'
 config = Config()
 redis = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, db=0)
@@ -213,6 +218,48 @@ def get_history(current_user):
             'login_time': i.login_time
         })
     return jsonify({'history': output})
+
+
+@routes.route('/yandex_auth', methods=['POST'])
+def yandex_auth(*args):
+    client_id = os.getenv('YANDEX_ID')
+    yandex_auth_uri = os.getenv('YANDEX_AUTH_URI')
+    req = requests.request(url=f'{yandex_auth_uri}&client_id={client_id}', method='GET')
+    return req.url
+
+
+@routes.route('/get_auth_token', methods=['GET', 'POST'])
+def get_auth_code(*args):
+    yandex_token_form = request.form
+    authorization_code = yandex_token_form.get('authorization_code')
+    code = yandex_token_form.get('code')
+    client_id = yandex_token_form.get('client_id')
+    client_secret = yandex_token_form.get('client_secret')
+    return make_response({"message": 'OK'})
+
+
+@routes.route('/google_auth', methods=['POST'])
+def google_auth(*args):
+    google_id = os.getenv('GOOGLE_ID')
+    redirect_uri = os.getenv('REDIRECT_URI')
+    scope = os.getenv('SCOPE')
+    response_type = os.getenv('GOOGLE_RESPONSE_TYPE')
+    google_auth_uri = os.getenv('GOOGLE_AUTH_URI')
+    req = requests.request(
+        url=f'{google_auth_uri}redirect_uri={redirect_uri}&response_type={response_type}&client_id={google_id}&scope={scope}',
+        method='POST')  # noqa:E501
+    return req.url
+
+
+@routes.route('/google_auth_token', methods=['GET', 'POST'])
+def get_google_token(*args):
+    google_form = request.form
+    client_id = google_form.get('client_id')
+    code = google_form.get('code')  # код необходимо декодировать
+    client_secret = google_form.get('client_secret')
+    redirect_uri = google_form.get('redirect_uri')
+    grant_type = google_form.get('grant_type')
+    return make_response({"message": 'OK'})
 
 
 @routes.route('/logout', methods=['POST'])

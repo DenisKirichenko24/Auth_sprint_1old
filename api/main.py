@@ -2,6 +2,7 @@ from core.config import app
 from v1.routes import routes
 from flask import request
 
+
 app.register_blueprint(routes)
 
 
@@ -13,7 +14,7 @@ def before_request():
 
 
 def main(flask_app):
-    flask_app.run(debug=True, host='0.0.0.0', port=5001)
+    flask_app.run(debug=True, host='0.0.0.0', port=5000)
 
 
 if __name__ == '__main__':
