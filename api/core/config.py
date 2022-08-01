@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from pydantic import BaseSettings, Field
 
 
@@ -26,3 +27,5 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 app.config['SECRET_KEY'] = 'secret-key-goes-here'
+
+FlaskInstrumentor().instrument_app(app)
