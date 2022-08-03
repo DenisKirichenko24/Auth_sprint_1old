@@ -11,6 +11,7 @@ from flask_jwt_extended import create_refresh_token, JWTManager
 from flask_migrate import Migrate
 from redis import Redis
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_expects_json import expects_json
 
 from api.models.session import Session
 from api.models.utils import token_required, refresh_token_required, rate_limit
@@ -18,6 +19,7 @@ from api.core.config import db, app, Config
 from api.core.redis import RedisStorage
 from api.models.roles import Role
 from api.models.users import User
+from api.v1.schemas.schemas import SignUpView, LoginView, RefreshView, ChangePasswordView, ChangeData
 
 
 migrate = Migrate(app, db)
@@ -43,6 +45,7 @@ def add_auth_history(user, request):
 
 
 @routes.route('/signup', methods=['POST'])
+@expects_json(SignUpView)
 def signup():
     data = request.form
     username, email = data.get('username'), data.get('email')
@@ -64,6 +67,7 @@ def signup():
 
 @routes.route('/login', methods=['POST'])
 @rate_limit(10)
+@expects_json(LoginView)
 def login():
     auth = request.form
 
@@ -111,6 +115,7 @@ def login():
 @routes.route('/refresh', methods=['POST'])
 @refresh_token_required
 @rate_limit(10)
+@expects_json(RefreshView)
 def refresh_token(refresh_token):
     user_id = token_storage.get(refresh_token)
     token_storage.remove(refresh_token)
@@ -128,6 +133,7 @@ def refresh_token(refresh_token):
 @routes.route('/change_password', methods=['POST'])
 @token_required
 @rate_limit(10)
+@expects_json(ChangePasswordView)
 def change_password(*args):
     change = request.form
     user = User.query \
@@ -151,6 +157,7 @@ def change_password(*args):
 @routes.route('/change_data', methods=['POST'])
 @token_required
 @rate_limit(10)
+@expects_json(ChangeData)
 def change_personal_data(current_user, *args):
     data_change = request.form
     new_email = data_change.get('new_email')

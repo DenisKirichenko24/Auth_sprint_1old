@@ -4,7 +4,7 @@ import jwt
 
 from redis import Redis
 
-from api.core.config import app, Config, api
+from api.core.config import app, Config
 from flask import request, jsonify
 
 from .users import User
