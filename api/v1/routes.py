@@ -6,6 +6,7 @@ import jwt
 import requests
 from core.config import db, app, Config
 from core.redis import RedisStorage
+
 from flask import request, make_response, jsonify, Blueprint
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
@@ -14,7 +15,7 @@ from flask_migrate import Migrate
 from models.roles import Role
 from models.session import Session
 from models.users import User
-from models.utils import token_required, refresh_token_required
+from models.utils import token_required, refresh_token_required, rate_limit
 from redis import Redis
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -85,6 +86,7 @@ def signup():
 
 
 @routes.route('/login', methods=['POST'])
+@rate_limit(10)
 @trace('login')
 def login():
     auth = request.form
@@ -132,6 +134,7 @@ def login():
 
 @routes.route('/refresh', methods=['POST'])
 @refresh_token_required
+@rate_limit(10)
 @trace('refresh')
 def refresh_token(refresh_token):
     user_id = token_storage.get(refresh_token)
@@ -149,6 +152,7 @@ def refresh_token(refresh_token):
 
 @routes.route('/change_password', methods=['POST'])
 @token_required
+@rate_limit(10)
 @trace('change_password')
 def change_password(*args):
     change = request.form
@@ -172,6 +176,7 @@ def change_password(*args):
 
 @routes.route('/change_data', methods=['POST'])
 @token_required
+@rate_limit(10)
 @trace('change_data')
 def change_personal_data(current_user, *args):
     data_change = request.form
@@ -189,6 +194,7 @@ def change_personal_data(current_user, *args):
 
 @routes.route('/user', methods=['GET'])
 @token_required
+@rate_limit(10)
 @trace('users')
 def get_all_users(current_user):
     users = User.query.all()
@@ -204,6 +210,7 @@ def get_all_users(current_user):
 
 @routes.route('/history', methods=['GET'])
 @token_required
+@rate_limit(10)
 @trace('history')
 def get_history(current_user):
     page = request.args.get('page', 1, type=int)
@@ -221,6 +228,7 @@ def get_history(current_user):
 
 
 @routes.route('/yandex_auth', methods=['POST'])
+@rate_limit(10)
 def yandex_auth(*args):
     client_id = os.getenv('YANDEX_ID')
     yandex_auth_uri = os.getenv('YANDEX_AUTH_URI')
@@ -229,6 +237,7 @@ def yandex_auth(*args):
 
 
 @routes.route('/get_auth_token', methods=['GET', 'POST'])
+@rate_limit(10)
 def get_auth_code(*args):
     yandex_token_form = request.form
     authorization_code = yandex_token_form.get('authorization_code')
@@ -239,6 +248,7 @@ def get_auth_code(*args):
 
 
 @routes.route('/google_auth', methods=['POST'])
+@rate_limit(10)
 def google_auth(*args):
     google_id = os.getenv('GOOGLE_ID')
     redirect_uri = os.getenv('REDIRECT_URI')
@@ -252,6 +262,7 @@ def google_auth(*args):
 
 
 @routes.route('/google_auth_token', methods=['GET', 'POST'])
+@rate_limit(10)
 def get_google_token(*args):
     google_form = request.form
     client_id = google_form.get('client_id')
@@ -264,6 +275,7 @@ def get_google_token(*args):
 
 @routes.route('/logout', methods=['POST'])
 @token_required
+@rate_limit(10)
 @trace('logout')
 def logout(access_token):
     return make_response({"message": 'You successfully logged out'})
