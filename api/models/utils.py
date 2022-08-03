@@ -1,7 +1,6 @@
 from functools import wraps
 import time
 import jwt
-
 from redis import Redis
 
 from api.core.config import app, Config
