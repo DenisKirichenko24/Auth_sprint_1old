@@ -3,6 +3,7 @@ from v1.routes import routes
 from flask import request
 
 
+
 app.register_blueprint(routes)
 
 

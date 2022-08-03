@@ -18,13 +18,22 @@ from models.users import User
 from models.utils import token_required, refresh_token_required, rate_limit
 from redis import Redis
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_expects_json import expects_json
 
+from api.models.session import Session
+from api.models.utils import token_required, refresh_token_required, rate_limit
+from api.core.config import db, app, Config
+from api.core.redis import RedisStorage
+from api.models.roles import Role
+from api.models.users import User
+from api.v1.schemas.schemas import SignUpView, LoginView, RefreshView, ChangePasswordView, ChangeData
 from models.session import Session, DeviceTypeEnum
 from models.utils import token_required, refresh_token_required
 from core.config import db, app, Config
 from core.redis import RedisStorage
 from models.roles import Role
 from models.users import User
+from api.v1.schemas.schemas import SignUpView, LoginView, RefreshView, ChangePasswordView, ChangeData
 
 from core.traces import trace
 
@@ -41,6 +50,7 @@ token_storage = RedisStorage(redis)
 token_expire = 43200  # время действия токена(месяц)
 user = User()
 jwt_manager = JWTManager(app)
+
 
 routes = Blueprint('routes', __name__)
 
@@ -65,6 +75,7 @@ def add_auth_history(user, request):
 
 
 @routes.route('/signup', methods=['POST'])
+@expects_json(SignUpView)
 @trace('reg')
 def signup():
     data = request.form
@@ -87,6 +98,7 @@ def signup():
 
 @routes.route('/login', methods=['POST'])
 @rate_limit(10)
+@expects_json(LoginView)
 @trace('login')
 def login():
     auth = request.form
@@ -135,6 +147,7 @@ def login():
 @routes.route('/refresh', methods=['POST'])
 @refresh_token_required
 @rate_limit(10)
+@expects_json(RefreshView)
 @trace('refresh')
 def refresh_token(refresh_token):
     user_id = token_storage.get(refresh_token)
@@ -153,6 +166,7 @@ def refresh_token(refresh_token):
 @routes.route('/change_password', methods=['POST'])
 @token_required
 @rate_limit(10)
+@expects_json(ChangePasswordView)
 @trace('change_password')
 def change_password(*args):
     change = request.form
@@ -177,6 +191,7 @@ def change_password(*args):
 @routes.route('/change_data', methods=['POST'])
 @token_required
 @rate_limit(10)
+@expects_json(ChangeData)
 @trace('change_data')
 def change_personal_data(current_user, *args):
     data_change = request.form
