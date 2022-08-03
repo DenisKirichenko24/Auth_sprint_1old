@@ -21,4 +21,3 @@ COPY api ./
 EXPOSE 8000/tcp
 
 CMD . /opt/venv/bin/activate && gunicorn --bind 0.0.0.0:8000 main:app
-
