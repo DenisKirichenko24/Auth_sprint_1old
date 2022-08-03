@@ -7,7 +7,7 @@ https://github.com/DenisKirichenko24/Auth_sprint_1
 ## Добавлены в 7 спринте
 - OAuth 2.0 c помощью Yandex и Google
 - Трассировка - Jaeger
-- Партицирование страниц
+- Партицирование таблиц
 - Ограничение количества запросов (rate limiter)
 - JSON схема
 
